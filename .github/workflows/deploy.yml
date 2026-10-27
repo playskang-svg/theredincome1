@@ -1,13 +1,13 @@
-# main에 push되면 Cloudflare Workers(the.pinda.kr)에 자동 배포합니다.
+# 수동 실행 전용 (Actions → Deploy → Run workflow). 위 on: 주석 참고
 # 필요한 GitHub 저장소 시크릿 (Settings → Secrets and variables → Actions):
 #   CLOUDFLARE_API_TOKEN  : 핀다AI 저장소와 같은 토큰 ("Edit Cloudflare Workers" 템플릿 + Account·D1·Edit)
 #   CLOUDFLARE_ACCOUNT_ID : Cloudflare 대시보드 Workers & Pages 화면 오른쪽의 Account ID
 # 수동 실행: GitHub → Actions → Deploy → Run workflow
 name: Deploy
 
+# 자동 배포 중지(2026-10-27): the.pinda.kr 도메인을 PDF 판매 Worker(the-pinda-ebook)가 쓰고 있어,
+# 이 Worker를 배포하면 라이브 사이트를 덮어쓸 수 있음. 도메인 정리 후 push 트리거를 되살릴 것.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
