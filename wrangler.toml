@@ -1,0 +1,39 @@
+# the.pinda.kr — 전자책 판매 사이트 (핀다AI와 같은 Cloudflare 계정, 별도 Worker)
+# 배포: npm run deploy  (빌드 후 wrangler deploy)
+# 비밀값: npx wrangler secret put 이름
+#   SESSION_SECRET  (아무 긴 난수. 주문 열람 쿠키 서명용)
+#   PAYAPP_USER_ID / PAYAPP_LINK_KEY / PAYAPP_LINK_VAL / PAYAPP_API_KEY  (핀다AI와 같은 페이앱 계정 값을 그대로)
+#   ADMIN_PASSWORD  (/admin 주문·후기 관리)
+#   BIZ_NAME, BIZ_CEO, BIZ_REG_NO, BIZ_MAIL_ORDER_NO, BIZ_ADDRESS, BIZ_PHONE, BIZ_EMAIL  (판매자 표시 의무)
+name = "the-pinda"
+main = "src/worker.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "the.pinda.kr", custom_domain = true },
+]
+
+[assets]
+directory = "public"
+binding = "ASSETS"
+run_worker_first = true
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"
+
+[placement]
+region = "gcp:asia-northeast3"
+
+# 핀다AI와 같은 D1을 공유하되 표는 eb_ 접두어로 분리 (따로 쓰려면 `wrangler d1 create the-pinda` 후 id 교체)
+[[d1_databases]]
+binding = "DB"
+database_name = "pindaai"
+database_id = "956eb34b-7c3f-4630-a1bf-096271d02cfc"
+
+[vars]
+BASE_URL = "https://the.pinda.kr"
+PAYMENT_ENABLED = "true"
+BIZ_TYPE = "individual"
+
+[observability]
+enabled = true
