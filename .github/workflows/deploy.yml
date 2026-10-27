@@ -60,6 +60,37 @@ jobs:
       - name: Workers 배포
         run: npx wrangler deploy
 
+      # GitHub 시크릿 → Worker 비밀값 반영 (등록해 둔 것만, 앞뒤 공백 제거). 배포 뒤에 실행하므로 Worker가 이미 있음
+      # 페이앱 값은 핀다AI와 같은 판매자 계정 값(페이앱 판매자 페이지 → 연동정보)을 그대로 넣으면 됨
+      - name: 비밀값 반영 (GitHub 시크릿 → Cloudflare Worker)
+        env:
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          PAYAPP_USER_ID: ${{ secrets.PAYAPP_USER_ID }}
+          PAYAPP_LINK_KEY: ${{ secrets.PAYAPP_LINK_KEY }}
+          PAYAPP_LINK_VAL: ${{ secrets.PAYAPP_LINK_VAL }}
+          PAYAPP_API_KEY: ${{ secrets.PAYAPP_API_KEY }}
+          ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+          BIZ_NAME: ${{ secrets.BIZ_NAME }}
+          BIZ_CEO: ${{ secrets.BIZ_CEO }}
+          BIZ_REG_NO: ${{ secrets.BIZ_REG_NO }}
+          BIZ_MAIL_ORDER_NO: ${{ secrets.BIZ_MAIL_ORDER_NO }}
+          BIZ_ADDRESS: ${{ secrets.BIZ_ADDRESS }}
+          BIZ_PHONE: ${{ secrets.BIZ_PHONE }}
+          BIZ_EMAIL: ${{ secrets.BIZ_EMAIL }}
+        run: |
+          f="$RUNNER_TEMP/worker-secrets.json"
+          node -e '
+            const keys = ["SESSION_SECRET","PAYAPP_USER_ID","PAYAPP_LINK_KEY","PAYAPP_LINK_VAL","PAYAPP_API_KEY","ADMIN_PASSWORD","BIZ_NAME","BIZ_CEO","BIZ_REG_NO","BIZ_MAIL_ORDER_NO","BIZ_ADDRESS","BIZ_PHONE","BIZ_EMAIL"];
+            const out = {};
+            for (const k of keys) { const v = (process.env[k] || "").trim(); if (v) out[k] = v; }
+            require("fs").writeFileSync(process.argv[1], JSON.stringify(out));
+            console.log(Object.keys(out).length ? "반영할 값: " + Object.keys(out).join(", ") : "GitHub에 등록된 비밀값 없음 → 건너뜀");
+            if (!out.SESSION_SECRET) console.log("::warning::SESSION_SECRET 시크릿이 없습니다. Worker에 따로 등록하지 않았다면 열람 쿠키 서명이 기본값으로 동작하니 꼭 등록하세요");
+            if (!(out.PAYAPP_USER_ID && out.PAYAPP_LINK_KEY && out.PAYAPP_LINK_VAL)) console.log("::warning::PAYAPP_USER_ID/LINK_KEY/LINK_VAL 이 없어 실제 결제가 아닌 테스트 결제창이 뜰 수 있습니다");
+          ' "$f"
+          if [ "$(cat "$f")" != "{}" ]; then npx wrangler secret bulk "$f"; fi
+          rm -f "$f"
+
       - name: 배포 확인 (the.pinda.kr 응답)
         run: |
           for i in 1 2 3 4 5 6; do
